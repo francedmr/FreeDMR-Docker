@@ -2,53 +2,40 @@
 
 ###############################################################################
 #
-#		Copyright (C) 2021 Adrian Craig (Ozzie), M0GLJ <oz-dmr@oz-dmr.uk>
-#		FreeDMR Installer Script
+#   Copyright (C) 2021 Adrian Craig (Ozzie), M0GLJ <oz-dmr@oz-dmr.uk>
+#       FreeDMR Installer Script
+#  
+#   Copyright (C) 2020 Simon Adlem, G7RZU <g7rzu@gb7fr.org.uk>  
+#       FreeDMR Server System
 #
-#		Copyright (C) 2020 Simon Adlem, G7RZU <g7rzu@gb7fr.org.uk>
-#		FreeDMR Server System
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 3 of the License, or
+#   (at your option) any later version.
 #
-#		This program is free software; you can redistribute it and/or modify
-#		it under the terms of the GNU General Public License as published by
-#   	the Free Software Foundation; either version 3 of the License, or
-#   	(at your option) any later version.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
 #
-#   	This program is distributed in the hope that it will be useful,
-#   	but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   	GNU General Public License for more details.
-#
-#   	You should have received a copy of the GNU General Public License
-#   	along with this program; if not, write to the Free Software Foundation,
-#   	Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
-#
-#		https://www.gnu.org/licenses/licenses.en.html
-#
-#       Developed on Debian 11 - X86_64
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software Foundation,
+#   Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #
 ###############################################################################
 
-# Check for SUDO access as ROOT
-
-if [ "$EUID" -ne 0 ]
-  then echo "Please enter root (sudo mode) before running this script"
-  echo
-  echo
-  exit
-fi
+###############################################################################
+#       Tested on these Systems      
+#
+#      Ubuntu 20.04 11 - X86_64      
+#         Debian 11 - X86_64         
+#    Raspberry Pi OS Lite - ARMv7    
+#    Raspberry Pi OS Lite - ARMv8    
+###############################################################################
 
 # Set version numbers
 
-version="1.05"
-
-# Change Log
-
-# v1.05		Passworn Length Checking for NORMAL INSTALL - 8 Characters Minimum
-# v1.04		Fix Some Bugs
-# v1.03		Change Logo Setup
-# v1.02		Fix Some Bugs
-# v1.01		Add IPv6 Support for Docker Components
-# v1.00		Creation of FreeDMR-Installer Script
+version="1.00"
 
 ###################
 ##               ##
@@ -65,10 +52,7 @@ echo -e "\x1b[34m        |  _| '__/ _ \/ _ \ | | | |\/| ||    /      | || '_ \/ 
 echo -e "\x1b[35m        | | | | |  __/  __/ |/ /| |  | || |\ \     _| || | | \__ \ || (_| | | |  __/ |    ";
 echo -e "\x1b[36m        \_| |_|  \___|\___|___/ \_|  |_/\_| \_|    \___/_| |_|___/\__\__,_|_|_|\___|_|    ";
 echo
-echo -e "\x1b[37m                        This script Copyright OZ-DMR Networks © 2021                      ";
-echo -e "\x1b[38m                      This script Copyright FRANCE-DMR Networks © 2021                    ";
-echo -e "\x1b[39m                         This script Copyright FR86FB  Fred © 2021                        ";
-echo
+echo -e "\x1b[37m                          This script Copyright FRANCE-DMR Networks © 2021                    ";
 echo "                                          Version $version";
 echo
 }
@@ -81,6 +65,10 @@ splash
 echo Just doing some PRE-INSTALL setup ...
 sleep 3
 
+# Install CURL
+
+sudo apt install curl -y
+
 # Get Current IP addresses
 
 intip="$(ip route get 1.1.1.1 | sed -n '/src/{s/.*src *\([^ ]*\).*/\1/p;q}')"
@@ -92,88 +80,12 @@ s_id="0"
 menu=""
 serv_ip="127.0.0.1"
 install="NOT SELECTED"
-opb="62035-62085"
-dockeropb="$opb:$opb"
-uport="62031"
-pword="passw0rd"
+opb="NOT USED"
+uport="NOT USED"
+pword="NOT USED"
 usepword="False"
 dashboard="NOT SELECTED"
-name="FreeDMR Server & HBMonv2 Dashboard Installer"
-
-# Stop Services the Might be Running
-
-if systemctl is-active --quiet docker.service; then
-	systemctl stop docker.service && systemctl disable docker.service
-fi
-
-if systemctl is-active --quiet apache2.service; then
-	systemctl stop apache2.service && systemctl disable apache2.service
-fi
-
-if systemctl is-active --quiet freedmr.service; then
-	systemctl stop freedmr.service && systemctl disable freedmr.service
-fi
-
-if systemctl is-active --quiet hotspot_proxy.service; then
-	systemctl stop hotspot_proxy.service && systemctl disable hotspot_proxy.service
-fi
-
-if systemctl is-active --quiet parrot.service; then
-	systemctl stop parrot.service && systemctl disable parrot.service
-fi
-
-if systemctl is-active --quiet hbmon.service; then
-	systemctl stop hbmon.service && systemctl disable hbmon.service
-fi
-
-systemctl daemon-reload
-
-# Stop Containers the Might be Running
-
-echo
-echo Stopping Docker Containers that may Running
-echo
-docker kill $(docker ps -q)
-
-# Removing Containers the Might be Exist
-
-echo
-echo Removing Docker Containers that exist
-echo
-docker rm $(docker ps -a -q)
-docker rmi $(docker images -q)
-
-# Install CURL GIT NET-TOOLS NMAP WGET WHOIS
-
-if [ $(dpkg-query -W -f='${Status}' curl 2>/dev/null | grep -c "ok installed") -eq 0 ];
-then
-  apt-get --assume-yes install curl;
-fi
-
-if [ $(dpkg-query -W -f='${Status}' git 2>/dev/null | grep -c "ok installed") -eq 0 ];
-then
-  apt-get --assume-yes install git;
-fi
-
-if [ $(dpkg-query -W -f='${Status}' net-tools 2>/dev/null | grep -c "ok installed") -eq 0 ];
-then
-  apt-get --assume-yes install net-tools;
-fi
-
-if [ $(dpkg-query -W -f='${Status}' nmap 2>/dev/null | grep -c "ok installed") -eq 0 ];
-then
-  apt-get --assume-yes install nmap;
-fi
-
-if [ $(dpkg-query -W -f='${Status}' wget 2>/dev/null | grep -c "ok installed") -eq 0 ];
-then
-  apt-get --assume-yes install wget;
-fi
-
-if [ $(dpkg-query -W -f='${Status}' whois 2>/dev/null | grep -c "ok installed") -eq 0 ];
-then
-  apt-get --assume-yes install whois;
-fi
+name="FreeDMR & Dashboard Server Installer"
 }
 
 function welcome () {
@@ -183,30 +95,31 @@ function welcome () {
 splash
 echo "Welcome to the FreeDMR System installer. This script was written by Adrian (Ozzie) M0GLJ in an attempt to make the"
 echo installation process loads easier for everyone. Please answer the questions as best you can. You will be able to
-echo change them later by editing the config files that are install during this proccess. We also recommend installing 
-echo FAIL2BAN to help secure your server.
+echo change the options by editing the config files that are install during this proccess.
 echo
 echo There are 4 Types of install that are available with this installer.
 echo
-echo -e "       • \x1b[33mDOCKER\x1b[37m    - FreeDMR Server and Dashboard"
-echo -e "                                                 (Built into Docker Containers)"
 echo
-echo -e "       • \x1b[33mHYBRID\x1b[37m    - FreeDMR Server and Dashboard"
-echo -e "                                                 (FreeDMR Server Built inside a Docker Container & HBMon Dashboard outside)"
+echo -e "     • \x1b[33mDOCKER\x1b[37m    - FreeDMR Server and Dashboard (Built into Docker Containers)"
 echo
-echo -e "       • \x1b[33mNORMAL\x1b[37m    - FreeDMR Server and Dashboard"
-echo -e "                                                 (NO DOCKER Containers)"
+echo -e "     • \x1b[33mHYBRID\x1b[37m    - FreeDMR Server and Dashboard (FreeDMR Built into a Docker Container & HBMon Dashboard outside)"
 echo
-echo -e "       • \x1b[33mBRIDGE\x1b[37m    - FreeDMR BRIDGE Server and Dashboard Server"
-echo -e "                                                 (Used for SPECIALISED BRIDGING) (NO DOCKER Containers)"
+echo -e "     • \x1b[33mNORMAL\x1b[37m    - FreeDMR Server and Dashboard (NO DOCKER Containers)"
 echo
-echo -e "       • \x1b[33mDASHBOARD\x1b[37m - Dashboard Server ONLY"
-echo -e "                                                 (NO DOCKER Containers)"
+echo -e "     • \x1b[33mBRIDGE\x1b[37m    - FreeDMR BRIDGE Server and Dashboard Server (Used for SPECIALISED BRIDGING) (NO DOCKER Containers)"
+echo
+echo -e "     • \x1b[33mDASHBOARD\x1b[37m - Dashboard Server ONLY (NO DOCKER Containers)"
+echo
 echo
 echo -e "The \x1b[33mDOCKER\x1b[37m system is the recomended method to install the FreeDMR System, but it's your choice as to how you install."
+echo ""
+echo
+echo -e "For more information about the \x1b[33mDOCKER\x1b[37m install, take a look at"
+echo
 echo 
-echo -e "For more information about the \x1b[33mDOCKER\x1b[37m install, take a look at \x1b[33mhttps://gitlab.hacknix.net/hacknix/FreeDMR/-/wikis/home \x1b[37m"
-echo 
+echo -e "\x1b[33m                        https://gitlab.hacknix.net/hacknix/FreeDMR/-/wikis/home \x1b[37m"
+echo
+echo
 read -p "                               Press any key to proceed with the install" -n1 -s
 }
 
@@ -229,6 +142,8 @@ echo
 read -p "Please select which INSTALL you would like ?  D / H / N / B / R / X  : " menu
 
 menu=${menu^^}
+
+sleep 3
 
 # Select DOCKER Server
 
@@ -288,13 +203,6 @@ fi
 	setup
 }
 
-function logo () {
-
-curl https://gitlab.hacknix.net/oz-dmr/freedmr-installer/-/raw/main/logo.png -o /var/www/html/img/logo.png
-
-chown -R www-data:www-data /var/www/html
-}
-
 function docker_config () {
 clear
 splash
@@ -315,7 +223,7 @@ hybrid_install
 
 function normal_config () {
 
-# Set USER Access PORT
+# Set PORT
 
 clear
 splash
@@ -325,7 +233,9 @@ echo -e "The Default is PORT \x1b[33m62031\x1b[37m and the Permitted PORTS are \
 echo
 read -p "Please enter the PORT number you would like to use?: " uport
 
-if [[ ${uport} -gt 55549 && ${uport} -lt 55581 ]] || [[ ${uport} -gt 62029 && ${uport} -lt 62032 ]]; then 
+uport="${port:=62031}"
+
+if (( ${uport} >= 55550 && ${uport} <= 55580 )) || (( ${uport} >= 62030 && ${uport} <= 62031 )); then 
 	echo
 	echo -e "Setting USER PORT:     \x1b[33m$uport\x1b[37m"
 	echo
@@ -333,8 +243,6 @@ if [[ ${uport} -gt 55549 && ${uport} -lt 55581 ]] || [[ ${uport} -gt 62029 && ${
 	sleep 3
 else
 	uport="62031"
-	echo
-	echo Port selected is outside the allowed range.
 	echo
 	echo -e "Setting USER PORT:     \x1b[33m$uport\x1b[37m"
 	echo
@@ -346,42 +254,36 @@ fi
 
 splash
 echo
-echo "Choose a PASSWORD you wish to DEFINE for USER MMDVM HOTSPOT's/REPEATER's to access this FreeDMR Server"
+echo "Would you like to set a PASSWORD for  USER HOTSPOT/REPEATER to access this FreeDMR Server"
 echo
-echo -e "Just press ENTER to set the default password:     \x1b[33mpassw0rd\x1b[37m"
+echo -e "The Default is PASSWORD is to set          \x1b[33mNO PASSWORD\x1b[37m"
 echo
-read -p "Enter 'NONE' (UPPERCASE) to use without a password for USER ACCESS : " pword
-pword=${pword:-passw0rd}
-usepword="False"
+echo -e "To set \x1b[33mNO PASSWORD\x1b[37m, just press the ENTER key"
+echo
+read -p "Please enter the PASSWORD you would like to use?: " pword
 
-if [[ $pword -ne "NONE" ]] && [[ $pword -ne "none" ]]; then
-	if [ ${#pword} -le 7 ]; then 
-		echo
-		echo "Password length need to 8 Characters or more" ;
-		echo
-		sleep 2
-		echo Restarting NORMAL Install
-		echo
-		sleep 3
-		normal_config
-	fi
-fi
-
-echo
-echo -e "USER ACCESS PASSWORD SET TO:     \x1b[33m" $pword
-echo
-echo -e "\x1b[37mUpdating Install Instructions ..."
-
-if [[ $pword == "NONE" ]] && [[ $pword == "none" ]]; then
+if [[ $pword="" ]]; then
+	pword="NOT USED"
+	echo
+	echo -e "Setting USER PASSWORD:     \x1b[33m$pword\x1b[37m"
+	echo
+	echo Updating Install Instructions ...
 	pword=""
 	usepword="True"
+	sleep 3
+else
+	echo
+	echo -e "Setting USER PASSWORD:     \x1b[33m$pword\x1b[37m"
+	echo
+	echo Updating Install Instructions ...
+	usepword="False"
+	sleep 3
 fi
-
-sleep 3
 	
 # Install DASHBOARD (YES or NO)
 
 splash
+echo
 echo
 echo Would you like to install a DASHBOARD with your FreeDMR NORMAL install ?
 echo
@@ -402,7 +304,7 @@ if [[ $install = "Y" ]] ;then
 	echo
 	echo
 	read -p "What is the name of your SERVER / NETWORK: " name
-	name="${name:=FreeDMR Server Installer brought to you by OZ-DMR Networks}"
+	name="${name:=FreeDMR Installer by OZ-DMR Networks}"
 	echo
 	echo -e "Setting SERVER NAME FOR DASHBOARD:     \x1b[33m$name\x1b[37m"
 	echo
@@ -412,17 +314,17 @@ if [[ $install = "Y" ]] ;then
 fi
 
 if [[ $install = "N" ]] ;then
-	dashboard=""
+	dashboard="NO"
 	echo
 	echo Updating Install Instructions ...
 	sleep 3
-	normal_install
+	normal_confirm
 fi
 	echo
 	echo
-	echo -e "                    \x1b[33mPlease make a selection form the list above\x1b[37m"
 	echo
-	echo -e "                    \x1b[33mStarting Install Selection from the Begining\x1b[37m"
+	echo
+	echo -e "                    \x1b[33mPlease make a selection form the list above\x1b[37m"
 	sleep 2
 	normal_config
 }
@@ -455,7 +357,7 @@ if [[ $install = "Y" ]] ;then
 	echo
 	echo
 	read -p "What is the name of your SERVER / NETWORK: " name
-	name="${name:=FreeDMR Bridge Server Installer brought to you by OZ-DMR Networks}"
+	name="${name:=FreeDMR Installer by OZ-DMR Networks}"
 	echo
 	echo -e "Setting SERVER NAME FOR DASHBOARD:     \x1b[33m$name\x1b[37m"
 	echo
@@ -473,11 +375,12 @@ if [[ $install = "N" ]] ;then
 fi
 	echo
 	echo
-	echo -e "                    \x1b[33mPlease make a selection form the list above\x1b[37m"
 	echo
-	echo -e "                    \x1b[33mStarting Install Selection from the Begining\x1b[37m"
+	echo
+	echo -e "                    \x1b[33mPlease make a selection form the list above\x1b[37m"
 	sleep 2
 	bridge_config
+
 }
 
 function dashboard_config () {
@@ -489,11 +392,14 @@ pword="NOT USED"
 clear
 splash
 echo
+echo "                                  HBMonv2 DASHBOARD ONLY Install"
+echo
+echo
 read -p "What is the name of your SERVER / NETWORK: " name
-name="${name:=HBMonv2 Dashboard Installer brought to you by OZ-DMR Networks}"
+name="${name:=FreeDMR Installer by OZ-DMR Networks}"
 echo
 echo
-echo -e "Setting SERVER NAME FOR DASHBOARD:     \x1b[33m$name\x1b[37m"
+echo -e "Setting SERVER NAME FOR DASHBOARD:     \x1b[33m$name\x1b[3m"
 echo
 echo Updating Install Instructions ...
 sleep 3
@@ -518,8 +424,99 @@ echo -e "Setting SERVER location:     \x1b[33m$serv_ip\x1b[37m"
 echo
 echo Updating Install Instructions ...
 sleep 3
-dashboard_install
+confirm_config
 exit 1
+}
+
+function normal_confirm () {
+
+# Display Configuration
+
+splash
+echo Configuration for Installation:
+echo
+echo "                                  FreeDMR SERVER :  $freedmr"
+echo
+echo "                         FreeDMR SERVER LOCATION :  $serv_ip"
+echo
+echo "                                       Dashboard :  $dashboard"
+echo
+echo "                                    Network Name :  $name"
+echo
+echo "                         USER Server Access Port :  $uport"
+echo
+echo "                     USER Server Access Password :  $pword"
+echo
+echo If you had FreeDMR or HBMonv2 installed before, that install will no be backed up or saved. A NEW
+echo "If you want to keep a previous install's config. exit the installer and back up the files you need."
+echo You can then re-run this installer.
+echo
+echo "Please check that the above is what you want to install. If it isn't what you want, select N and"
+echo "run though the config process again."
+echo
+read -p "Is This Configuration Correct ?  Y / N  : " confirm
+
+confirm=${confirm^^}
+
+# Proceed with Install
+
+if [[ $confirm = "Y" ]] ;then
+	normal_install
+fi
+
+# Restart Config Setup
+
+if [[ $confirm = "N" ]] ;then
+	setup
+fi
+
+confirm_config
+}
+
+function dashboard_confirm () {
+
+# Display Configuration
+
+splash
+echo Configuration for Installation:
+echo
+echo "                                  FreeDMR SERVER :  $freedmr"
+echo
+echo "                         FreeDMR SERVER LOCATION :  $serv_ip"
+echo
+echo "                                       Dashboard :  $dashboard"
+echo
+echo "                                    Network Name :  $name"
+echo
+echo "                         USER Server Access Port :  $uport"
+echo
+echo "                     USER Server Access Password :  $pword"
+echo
+echo If you had FreeDMR or HBMonv2 installed before, that install will no be backed up or saved. A NEW
+echo "If you want to keep a previous install's config. exit the installer and back up the files you need."
+echo You can then re-run this installer.
+echo
+echo "Please check that the above is what you want to install. If it isn't what you want, select N and"
+echo "run though the config process again."
+echo
+read -p "Is This Configuration Correct ?  Y / N  : " confirm
+
+confirm=${confirm^^}
+
+# Proceed with Install
+
+if [[ $confirm = "Y" ]] ;then
+	dashboard_install
+fi
+
+# Restart Config Setup
+
+if [[ $confirm = "N" ]] ;then
+	freedmr="Docker"
+	setup
+fi
+
+confirm_config
 }
 
 function docker_install () {
@@ -568,13 +565,11 @@ mkdir -p /etc/freedmr/json &&
 echo
 echo Obtaining json Files...
 cd /etc/freedmr/json &&
-curl http://downloads.freedmr.uk/downloads/local_subscriber_ids.json -o subscriber_ids.json && 
+curl http://downloads.freedmr.uk/downloads/local_subscriber_ids.json -o subscriber_ids.json &&
 curl http://downloads.freedmr.uk/downloads/talkgroup_ids.json -o talkgroup_ids.json &&
 curl https://www.radioid.net/static/rptrs.json -o peer_ids.json &&
 chmod -R 777 /etc/freedmr/json &&
 
-clear
-splash
 echo
 echo Installing FreeDMR Configuration File ... 
 cat << EOF > /etc/freedmr/freedmr.cfg
@@ -589,7 +584,7 @@ TGID_TS1_ACL: PERMIT:ALL
 TGID_TS2_ACL: PERMIT:ALL
 GEN_STAT_BRIDGES: True
 ALLOW_NULL_PASSPHRASE: True
-ANNOUNCEMENT_LANGUAGES: fr_FR
+ANNOUNCEMENT_LANGUAGES:
 SERVER_ID: 0
 DATA_GATEWAY: False
 
@@ -611,9 +606,9 @@ PATH: ./
 PEER_FILE: peer_ids.json
 SUBSCRIBER_FILE: subscriber_ids.json
 TGID_FILE: talkgroup_ids.json
-PEER_URL: https://www.radioid.net/static/rptrs.json
-SUBSCRIBER_URL: http://downloads.freedmr.uk/downloads/local_subscriber_ids.json
-TGID_URL: TGID_URL: http://downloads.freedmr.uk/downloads/talkgroup_ids.json
+PEER_URL: https://www.france-dmr.fr/static/rptrs.json
+SUBSCRIBER_URL: https://www.france-dmr.fr/static/local_subscriber_ids.json
+TGID_URL: TGID_URL: https://www.france-dmr.fr/static/talkgroup_ids.json
 STALE_DAYS: 7
 
 [MYSQL]
@@ -648,7 +643,7 @@ MAX_PEERS: 1
 EXPORT_AMBE: False
 IP: 127.0.0.1
 PORT: 54000
-PASSPHRASE: passw0rd
+PASSPHRASE:
 GROUP_HANGTIME: 5
 USE_ACL: True
 REG_ACL: DENY:1
@@ -663,30 +658,6 @@ TS2_STATIC:
 DEFAULT_REFLECTOR: 0
 ANNOUNCEMENT_LANGUAGE: fr_FR
 GENERATOR: 100
-
-[D-APRS]
-MODE: MASTER
-ENABLED: True
-REPEAT: True
-MAX_PEERS: 1
-EXPORT_AMBE: False
-IP:
-PORT: 52555
-PASSPHRASE:
-GROUP_HANGTIME: 0
-USE_ACL: True
-REG_ACL: DENY:1
-SUB_ACL: DENY:1
-TGID_TS1_ACL: PERMIT:ALL
-TGID_TS2_ACL: PERMIT:ALL
-DEFAULT_UA_TIMER: 10
-SINGLE_MODE: False
-VOICE_IDENT: False
-TS1_STATIC:
-TS2_STATIC:
-DEFAULT_REFLECTOR: 0
-GENERATOR: 0
-ANNOUNCEMENT_LANGUAGE: fr_FR
 
 [ECHO]
 MODE: PEER
@@ -776,7 +747,7 @@ services:
         ports:
             - '62031:62031/udp'
             #Change the below to inlude ports used for your OBP(s)
-            - '$dockeropb/udp'
+            - '62035-62085:62035-62085/udp'
         image: 'hacknix/freedmr:latest'
         restart: "unless-stopped"
         networks:
@@ -795,16 +766,6 @@ services:
             #Override proxy external port
             #- FDPROXY_LISTENPORT=62031
         read_only: "true"
-
-    ipv6nat:
-        container_name: ipv6nat
-        image: 'robbertkl/ipv6nat'
-        volumes:
-            - '/var/run/docker.sock:/var/run/docker.sock:ro'
-            - '/lib/modules:/lib/modules:ro'
-        privileged: "true"
-        network_mode: "host"
-        restart: "unless-stopped"
 
     freedmrmon:
         container_name: freedmrmon
@@ -868,8 +829,6 @@ mv /var/log/FreeDMRmonitor/lastheard.log /var/log/FreeDMRmonitor/lastheard.log.s
 EOF
 chmod 755 /etc/cron.daily/lastheard
 
-clear
-splash
 echo
 echo Starting FreeDMR container...
 docker-compose up -d
@@ -905,13 +864,11 @@ mkdir -p /etc/freedmr/json &&
 echo
 echo Downloading json Files...
 cd /etc/freedmr/json &&
-curl http://downloads.freedmr.uk/downloads/local_subscriber_ids.json -o subscriber_ids.json &&
-curl http://downloads.freedmr.uk/downloads/talkgroup_ids.json -o talkgroup_ids.json &&
-curl https://www.radioid.net/static/rptrs.json -o peer_ids.json &&
+curl https://www.france-dmr.fr/static/local_subscriber_ids.json -o subscriber_ids.json &&
+curl https://www.france-dmr.fr/static/talkgroup_ids.json -o talkgroup_ids.json &&
+curl https://www.france-dmr.fr/static/rptrs.json -o peer_ids.json &&
 chmod -R 777 /etc/freedmr/json &&
 
-clear
-splash
 echo
 echo Installing FreeDMR Configuration File ... 
 cat << EOF > /etc/freedmr/freedmr.cfg
@@ -948,9 +905,9 @@ PATH: ./
 PEER_FILE: peer_ids.json
 SUBSCRIBER_FILE: subscriber_ids.json
 TGID_FILE: talkgroup_ids.json
-PEER_URL: https://www.radioid.net/static/rptrs.json
-SUBSCRIBER_URL: http://downloads.freedmr.uk/downloads/local_subscriber_ids.json
-TGID_URL: TGID_URL: http://downloads.freedmr.uk/downloads/talkgroup_ids.json
+PEER_URL: https://www.france-dmr.fr/static/rptrs.json
+SUBSCRIBER_URL: https://www.france-dmr.fr/static/local_subscriber_ids.json
+TGID_URL: TGID_URL: https://www.france-dmr.fr/static/talkgroup_ids.json
 STALE_DAYS: 7
 
 [MYSQL]
@@ -985,7 +942,7 @@ MAX_PEERS: 1
 EXPORT_AMBE: False
 IP: 127.0.0.1
 PORT: 54000
-PASSPHRASE: passw0rd
+PASSPHRASE:
 GROUP_HANGTIME: 5
 USE_ACL: True
 REG_ACL: DENY:1
@@ -1085,8 +1042,8 @@ services:
         ports:
             - '62031:62031/udp'
             #Change the below to inlude ports used for your OBP(s)
-            - '$dockeropb/udp'
-        image: 'hacknix/freedmr:latest
+            - '62035-62085:62035-62085/udp'
+        image: 'hacknix/freedmr:latest'
         restart: "unless-stopped"
         networks:
            app_net:
@@ -1105,16 +1062,6 @@ services:
             #- FDPROXY_LISTENPORT=62031
         read_only: "true"
 
-    ipv6nat:
-        container_name: ipv6nat
-        image: 'robbertkl/ipv6nat'
-        volumes:
-            - '/var/run/docker.sock:/var/run/docker.sock:ro'
-            - '/lib/modules:/lib/modules:ro'
-        privileged: "true"
-        network_mode: "host"
-        restart: "unless-stopped"
-
 networks:
   app_net:
     driver: bridge
@@ -1125,8 +1072,6 @@ networks:
           gateway: 172.16.238.1
 EOF
 
-clear
-splash
 echo
 echo Starting FreeDMR container...
 docker-compose up -d
@@ -1143,35 +1088,39 @@ splash
 echo
 echo Installing FreeDMR DOCKER Server
 echo
-echo Installing Required Packages ...
-apt-get -y install docker.io
-apt-get -y install docker-compose
-apt-get -y  install conntrack
-apt-get install python3-pip
+echo Installing Required Packages...
+apt-get -y install docker.io && 
+apt-get -y install docker-compose &&
+apt-get -y  install conntrack &&
 
-echo '{ "userland-proxy": false}' > /etc/docker/daemon.json
+echo '{ "userland-proxy": false}' > /etc/docker/daemon.json &&
 
+echo
 echo
 echo Restart Docker ...
-systemctl restart docker
+systemctl restart docker &&
 
 echo
-echo Creating Config Directory ...
-mkdir /etc/freedmr
-chmod 755 /etc/freedmr
+echo
+echo Creating Config Directory...
+mkdir /etc/freedmr &&
+chmod 755 /etc/freedmr &&
 
 echo
-echo Creating json Directory ...
-mkdir -p /etc/freedmr/json
+echo
+echo Creating json Directory...
+mkdir -p /etc/freedmr/json &&
 
 echo
-echo Downloading json Files ...
-cd /etc/freedmr/json
-curl http://downloads.freedmr.uk/downloads/local_subscriber_ids.json -o subscriber_ids.json
-curl http://downloads.freedmr.uk/downloads/talkgroup_ids.json -o talkgroup_ids.json
-curl https://www.radioid.net/static/rptrs.json -o peer_ids.json
-chmod -R 777 /etc/freedmr/json
+echo
+echo Downloading json Files...
+cd /etc/freedmr/json &&
+curl https://www.france-dmr.fr/static/local_subscriber_ids.json -o subscriber_ids.json &&
+curl https://www.france-dmr.fr/static/talkgroup_ids.json -o talkgroup_ids.json &&
+curl https://www.france-dmr.fr/static/rptrs.json -o peer_ids.json &&
+chmod -R 777 /etc/freedmr/json &&
 
+echo
 echo
 echo Installing FreeDMR Configuration File ... 
 cat << EOF > /etc/freedmr/freedmr.cfg
@@ -1208,9 +1157,9 @@ PATH: ./
 PEER_FILE: peer_ids.json
 SUBSCRIBER_FILE: subscriber_ids.json
 TGID_FILE: talkgroup_ids.json
-PEER_URL: https://www.radioid.net/static/rptrs.json
-SUBSCRIBER_URL: http://downloads.freedmr.uk/downloads/local_subscriber_ids.json
-TGID_URL: TGID_URL: http://downloads.freedmr.uk/downloads/talkgroup_ids.json
+PEER_URL: https://www.france-dmr.fr/static/rptrs.json
+SUBSCRIBER_URL: https://www.france-dmr.fr/static/local_subscriber_ids.json
+TGID_URL: TGID_URL: https://www.france-dmr.fr/static/talkgroup_ids.json
 STALE_DAYS: 7
 
 [MYSQL]
@@ -1245,7 +1194,7 @@ MAX_PEERS: 1
 EXPORT_AMBE: False
 IP: 127.0.0.1
 PORT: 54000
-PASSPHRASE: passw0rd
+PASSPHRASE:
 GROUP_HANGTIME: 5
 USE_ACL: True
 REG_ACL: DENY:1
@@ -1296,18 +1245,21 @@ ANNOUNCEMENT_LANGUAGE: fr_FR
 EOF
 
 echo
+echo
 echo Installing FreeDMR Rules File ...
-echo "BRIDGES = {'9990': [{'SYSTEM': 'ECHO', 'TS': 2, 'TGID': 9990, 'ACTIVE': True, 'TIMEOUT': 2, 'TO_TYPE': 'NONE', 'ON': [], 'OFF': [], 'RESET': []},]}" > /etc/freedmr/rules.py
+echo "BRIDGES = {'9990': [{'SYSTEM': 'ECHO', 'TS': 2, 'TGID': 9990, 'ACTIVE': True, 'TIMEOUT': 2, 'TO_TYPE': 'NONE', 'ON': [], 'OFF': [], 'RESET': []},]}" > /etc/freedmr/rules.py &&
 
+echo
 echo
 echo Set Permission ...
-chown -R 54000 /etc/freedmr
+chown -R 54000 /etc/freedmr &&
 
 echo
-echo Setup logging ...
-mkdir -p /var/log/freedmr
-touch /var/log/freedmr/freedmr.log
-chown -R 54000 /var/log/freedmr
+echo
+echo Setup logging...
+mkdir -p /var/log/freedmr &&
+touch /var/log/freedmr/freedmr.log &&
+chown -R 54000 /var/log/freedmr &&
 
 cat << EOF > /etc/freedmr/docker-compose.yml
 ###############################################################################
@@ -1345,7 +1297,7 @@ services:
         ports:
             - '62031:62031/udp'
             #Change the below to inlude ports used for your OBP(s)
-            - '$dockeropb/udp'
+            - '62035-62085:62035-62085/udp'
         image: 'hacknix/freedmr:latest'
         restart: "unless-stopped"
         networks:
@@ -1365,16 +1317,6 @@ services:
             #- FDPROXY_LISTENPORT=62031
         read_only: "true"
 
-    ipv6nat:
-        container_name: ipv6nat
-        image: 'robbertkl/ipv6nat'
-        volumes:
-            - '/var/run/docker.sock:/var/run/docker.sock:ro'
-            - '/lib/modules:/lib/modules:ro'
-        privileged: "true"
-        network_mode: "host"
-        restart: "unless-stopped"
-
 networks:
   app_net:
     driver: bridge
@@ -1387,21 +1329,25 @@ EOF
 
 echo
 echo
-echo Starting FreeDMR container ...
+echo Starting FreeDMR container...
 docker-compose up -d
 sleep 3
 
 echo
+echo
 sudo apt install conntrack tcpdump net-tools zip php apache2 -y
 
 echo
+echo
 sudo apt autoremove
 
+echo
 echo
 cd /opt
 sudo rm -fR /opt/HBMonv2
 git clone https://gitlab.hacknix.net/oz-dmr/HBMonv2.git
 
+echo
 echo
 cd /opt/HBMonv2
 bash install.sh
@@ -1412,7 +1358,7 @@ cat << EOF > /opt/HBMonv2/config.py
 CONFIG_INC      = True                           # Include HBlink stats
 HOMEBREW_INC    = True                           # Display Homebrew Peers status
 LASTHEARD_INC   = True                           # Display lastheard table on main page
-BRIDGES_INC     = False                          # Display Bridge status and button
+BRIDGES_INC     = True                           # Display Bridge status and button
 EMPTY_MASTERS   = False                          # Display Enable (True) or DISABLE (False) empty masters in status
 #
 HBLINK_IP       = '172.16.238.10'                # HBlink's IP Address
@@ -1434,8 +1380,8 @@ LOCAL_SUB_FILE  = 'local_subscriber_ids.json'    # User provided (optional, leav
 LOCAL_PEER_FILE = 'local_peer_ids.json'          # User provided (optional, leave '' if you don't use it)
 LOCAL_TGID_FILE = 'local_talkgroup_ids.json'     # User provided (optional, leave '' if you don't use it)
 FILE_RELOAD     = 1                              # Number of days before we reload DMR-MARC database files
-PEER_URL        = 'https://www.radioid.net/static/rptrs.json'
-SUBSCRIBER_URL  = 'https://www.radioid.net/static/users.json'
+PEER_URL        = 'https://www.france-dmr.fr/static/rptrs.json'
+SUBSCRIBER_URL  = 'https://www.france-dmr.fr/static/users.json'
 
 # Settings for log files
 LOG_PATH        = '/var/log/freedmr/'            # MUST END IN '/'
@@ -1494,10 +1440,15 @@ cp -r /opt/HBMonv2/html /var/www/
 
 # Setup OZ-DMR logo
 
-logo
+curl https://gitlab.hacknix.net/oz-dmr/scripts/-/raw/53e971299a82ffced2220750441e6601dd264101/logo.png?inline=false -o /var/www/html/img/logo.png
+
+# Change Directory & File Ownership
+
+chown -R www-data:www-data /var/www/html
 
 # Restart Apache2 Web Server
 
+echo
 echo
 systemctl restart apache2.service
 
@@ -1524,10 +1475,12 @@ if [ ! -f /etc/systemd/system/hbmon.service ]; then
 fi
 
 echo
+echo
 sudo systemctl daemon-reload
 
 # Enable & Start system unit files for each service
 
+echo
 echo
 systemctl enable hbmon.service && systemctl restart hbmon.service
 report
@@ -1542,28 +1495,28 @@ function normal_install () {
 cd /opt
 
 if [[ dashboard="YES" ]]; then
-	dashboard="and HBMonv2 DASHBOARD"
+	dashboard="and HBMonv2 DASHBOARD Server"
+else
+	dashboard=""
 fi
 
 splash
 echo
 echo "Installing FreeDMR Server $dashboard"
-
-if [[ dashboard="and HBMonv2 DASHBOARD" ]]; then
-	dashboard="YES"
-fi
-
 echo
 echo "Updating the OS, Installing Required Packages and Removing File not Required ..."
 echo
 sudo apt install conntrack tcpdump net-tools zip -y
-sudo apt install python3-pip
+sudo apt autoremove
+
+if [[ dashboard="and HBMonv2 DASHBOARD Server" ]]; then
+	dashboard="YES"
+fi
 
 if [[ dashboard="YES" ]]; then
 	sudo apt install php apache2 -y
+	sudo apt autoremove
 fi
-
-sudo apt autoremove
 
 # Create directories, log & other files
 
@@ -1593,12 +1546,6 @@ if [[ dashboard="YES" ]]; then
 	sudo rm -fR /opt/HBMonv2
 	git clone https://gitlab.hacknix.net/oz-dmr/HBMonv2.git
 fi
-
-# Get HBNet GIT
-
-cd /opt
-#sudo rm -fR /opt/FreeDMR
-git clone https://github.com/m0glj/HBNet-GPS.git
 
 echo
 echo Creating FreeDMR Configuration File ... 
@@ -1636,9 +1583,9 @@ PATH: ./
 PEER_FILE: peer_ids.json
 SUBSCRIBER_FILE: subscriber_ids.json
 TGID_FILE: talkgroup_ids.json
-PEER_URL: https://www.radioid.net/static/rptrs.json
-SUBSCRIBER_URL: http://downloads.freedmr.uk/downloads/local_subscriber_ids.json
-TGID_URL: TGID_URL: http://downloads.freedmr.uk/downloads/talkgroup_ids.json
+PEER_URL: https://www.france-dmr.fr/static/rptrs.json
+SUBSCRIBER_URL: https://www.france-dmr.fr/static/local_subscriber_ids.json
+TGID_URL: TGID_URL: https://www.france-dmr.fr/static/talkgroup_ids.json
 STALE_DAYS: 7
 
 [MYSQL]
@@ -2030,9 +1977,9 @@ PATH: ./
 PEER_FILE: peer_ids.json
 SUBSCRIBER_FILE: subscriber_ids.json
 TGID_FILE: talkgroup_ids.json
-PEER_URL: https://www.radioid.net/static/rptrs.json
-SUBSCRIBER_URL: https://www.radioid.net/static/users.json
-TGID_URL: http://downloads.freedmr.uk/downloads/talkgroup_ids.json
+PEER_URL: https://www.france-dmr.fr/static/rptrs.json
+SUBSCRIBER_URL: https://www.france-dmr.fr/static/users.json
+TGID_URL: https://www.france-dmr.fr/static/talkgroup_ids.json
 STALE_DAYS: 1
 
 [MYSQL]
@@ -2095,7 +2042,7 @@ cat << EOF > /opt/HBMonv2/config.py
 CONFIG_INC      = True                           # Include HBlink stats
 HOMEBREW_INC    = True                           # Display Homebrew Peers status
 LASTHEARD_INC   = True                           # Display lastheard table on main page
-BRIDGES_INC     = False                          # Display Bridge status and button
+BRIDGES_INC     = True                           # Display Bridge status and button
 EMPTY_MASTERS   = False                          # Display Enable (True) or DISABLE (False) empty masters in status
 #
 HBLINK_IP       = '$serv_ip'                     # HBlink's IP Address
@@ -2117,8 +2064,8 @@ LOCAL_SUB_FILE  = 'local_subscriber_ids.json'    # User provided (optional, leav
 LOCAL_PEER_FILE = 'local_peer_ids.json'          # User provided (optional, leave '' if you don't use it)
 LOCAL_TGID_FILE = 'local_talkgroup_ids.json'     # User provided (optional, leave '' if you don't use it)
 FILE_RELOAD     = 1                              # Number of days before we reload DMR-MARC database files
-PEER_URL        = 'https://www.radioid.net/static/rptrs.json'
-SUBSCRIBER_URL  = 'https://www.radioid.net/static/users.json'
+PEER_URL        = 'https://www.france-dmr.fr/static/rptrs.json'
+SUBSCRIBER_URL  = 'https://www.france-dmr.fr/static/users.json'
 
 # Settings for log files
 LOG_PATH        = '/var/log/freedmr/'            # MUST END IN '/'
@@ -2177,7 +2124,11 @@ cp -r /opt/HBMonv2/html /var/www/
 
 # Setup OZ-DMR logo
 
-logo
+curl https://france-dmr.fr/images/logo.png?inline=false -o /var/www/html/img/logo.png
+
+# Change Directory & File Ownership
+
+chown -R www-data:www-data /var/www/html
 
 # Restart Apache2 Web Server
 
@@ -2251,10 +2202,9 @@ fi
 
 # Remove OLD Symlink files and Create NEW symlinks for each system unit file for each service
 
-[ -f /etc/systemd/system/freedmr.service ] && sudo rm /etc/systemd/system/freedmr.service
-[ -f /etc/systemd/system/hotspot_proxy.service ] && sudo rm /etc/systemd/system/hotspot_proxy.service
-[ -f /etc/systemd/system/parrot.service ] && sudo rm /etc/systemd/system/parrot.service
-[ -f /etc/systemd/system/hbmon.service ] && sudo rm /etc/systemd/system/hbmon.service
+sudo rm /etc/systemd/system/freedmr.service
+sudo rm /etc/systemd/system/hotspot_proxy.service
+sudo rm /etc/systemd/system/parrot.service
 
 if [ ! -f /etc/systemd/system/freedmr.service ]; then
 	ln -s /opt/FreeDMR/systemd-scripts/freedmr.service /etc/systemd/system/freedmr.service
@@ -2307,10 +2257,9 @@ splash
 echo
 echo "Installing FreeDMR BRIDGE Server $dashboard"
 echo
-echo "Updating the OS, Installing Required Packages and Removing Files not Required ..."
+echo "Updating the OS, Installing Required Packages and Removing File not Required ..."
 echo
 sudo apt install conntrack tcpdump net-tools zip -y
-sudo apt install python3-pip
 sudo apt autoremove
 
 if [[ dashboard="and HBMonv2 DASHBOARD Server" ]]; then
@@ -2387,9 +2336,9 @@ PATH: ./
 PEER_FILE: peer_ids.json
 SUBSCRIBER_FILE: subscriber_ids.json
 TGID_FILE: talkgroup_ids.json
-PEER_URL: https://www.radioid.net/static/rptrs.json
-SUBSCRIBER_URL: http://downloads.freedmr.uk/downloads/local_subscriber_ids.json
-TGID_URL: TGID_URL: http://downloads.freedmr.uk/downloads/talkgroup_ids.json
+PEER_URL: https://www.france-dmr.fr/static/rptrs.json
+SUBSCRIBER_URL: https://www.france-dmr.fr/static/local_subscriber_ids.json
+TGID_URL: TGID_URL: https://www.france-dmr.fr/static/talkgroup_ids.json
 STALE_DAYS: 7
 
 [MYSQL]
@@ -2424,7 +2373,7 @@ MAX_PEERS: 10
 EXPORT_AMBE: False
 IP: 127.0.0.1
 PORT: 54000
-PASSPHRASE: passw0rd
+PASSPHRASE: s3cr3tpa55w0rd
 GROUP_HANGTIME: 5
 USE_ACL: True
 REG_ACL: DENY:1
@@ -2452,9 +2401,9 @@ MASTER_PORT: 54915
 PASSPHRASE: passw0rd
 CALLSIGN: ECHO
 RADIO_ID: 1000001
-RX_FREQ: 449000000
-TX_FREQ: 444000000
-TX_POWER: 25
+RX_FREQ: 000000000
+TX_FREQ: 000000000
+TX_POWER: 1
 COLORCODE: 1
 SLOTS: 1
 LATITUDE: 00.0000
@@ -2512,9 +2461,9 @@ PATH: ./
 PEER_FILE: peer_ids.json
 SUBSCRIBER_FILE: subscriber_ids.json
 TGID_FILE: talkgroup_ids.json
-PEER_URL: https://www.radioid.net/static/rptrs.json
-SUBSCRIBER_URL: https://www.radioid.net/static/users.json
-TGID_URL: http://downloads.freedmr.uk/downloads/talkgroup_ids.json
+PEER_URL: https://www.france-dmr.fr/static/rptrs.json
+SUBSCRIBER_URL: https://www.france-dmr.fr/static/users.json
+TGID_URL: https://www.france-dmr.fr/static/talkgroup_ids.json
 STALE_DAYS: 1
 
 [MYSQL]
@@ -2599,8 +2548,8 @@ LOCAL_SUB_FILE  = 'local_subscriber_ids.json'    # User provided (optional, leav
 LOCAL_PEER_FILE = 'local_peer_ids.json'          # User provided (optional, leave '' if you don't use it)
 LOCAL_TGID_FILE = 'local_talkgroup_ids.json'     # User provided (optional, leave '' if you don't use it)
 FILE_RELOAD     = 1                              # Number of days before we reload DMR-MARC database files
-PEER_URL        = 'https://www.radioid.net/static/rptrs.json'
-SUBSCRIBER_URL  = 'https://www.radioid.net/static/users.json'
+PEER_URL        = 'https://www.france-dmr.fr/static/rptrs.json'
+SUBSCRIBER_URL  = 'https://www.france-dmr.fr/static/users.json'
 
 # Settings for log files
 LOG_PATH        = '/var/log/freedmr/'            # MUST END IN '/'
@@ -2659,7 +2608,7 @@ cp -r /opt/HBMonv2/html /var/www/
 
 # Setup OZ-DMR logo
 
-logo
+curl https://gitlab.hacknix.net/oz-dmr/scripts/-/raw/53e971299a82ffced2220750441e6601dd264101/logo.png?inline=false -o /var/www/html/img/logo.png
 
 # Change Directory & File Ownership
 
@@ -2810,7 +2759,7 @@ cat << EOF > /opt/HBMonv2/config.py
 CONFIG_INC      = True                           # Include HBlink stats
 HOMEBREW_INC    = True                           # Display Homebrew Peers status
 LASTHEARD_INC   = True                           # Display lastheard table on main page
-BRIDGES_INC     = False                          # Display Bridge status and button
+BRIDGES_INC     = True                           # Display Bridge status and button
 EMPTY_MASTERS   = False                          # Display Enable (True) or DISABLE (False) empty masters in status
 #
 HBLINK_IP       = '$serv_ip'                     # HBlink's IP Address
@@ -2832,8 +2781,8 @@ LOCAL_SUB_FILE  = 'local_subscriber_ids.json'    # User provided (optional, leav
 LOCAL_PEER_FILE = 'local_peer_ids.json'          # User provided (optional, leave '' if you don't use it)
 LOCAL_TGID_FILE = 'local_talkgroup_ids.json'     # User provided (optional, leave '' if you don't use it)
 FILE_RELOAD     = 1                              # Number of days before we reload DMR-MARC database files
-PEER_URL        = 'https://www.radioid.net/static/rptrs.json'
-SUBSCRIBER_URL  = 'https://www.radioid.net/static/users.json'
+PEER_URL        = 'https://www.france-dmr.fr/static/rptrs.json'
+SUBSCRIBER_URL  = 'https://www.france-dmr.fr/static/users.json'
 
 # Settings for log files
 LOG_PATH        = '/var/log/freedmr/'            # MUST END IN '/'
@@ -2892,7 +2841,7 @@ cp -r /opt/HBMonv2/html /var/www/
 
 # Setup OZ-DMR logo
 
-logo
+curl https://gitlab.hacknix.net/oz-dmr/scripts/-/raw/53e971299a82ffced2220750441e6601dd264101/logo.png?inline=false -o /var/www/html/img/logo.png
 
 # Change Directory & File Ownership
 
@@ -2930,6 +2879,7 @@ sudo systemctl daemon-reload
 # Enable & Start system unit files for each service
 
 systemctl enable hbmon.service && systemctl restart hbmon.service
+opb="NOT USED"
 report_dashboard
 }
 
@@ -2938,11 +2888,6 @@ function report_dashboard () {
 # Report Server Setup and Display Details
 
 splash
-
-timer
-
-splash
-
 echo You have just installed a BASIC STAND-ALONE DASHBOARD Server. You can now customise it to suit your own requirements.
 echo Please wait a few minutes for the dashboard to start. It will download user data files before it kicks into action.
 echo
@@ -2968,7 +2913,6 @@ echo -e "                   \x1b[37m\x1b[33mA RECORD\x1b[37m in your DNS Domain 
 echo
 echo We will now leave you to configure your server to suit your individual requirements.
 echo
-
 exit 1
 }
 
@@ -2983,21 +2927,17 @@ fi
 
 splash
 
-timer
-
-splash
-
 echo You have just installed a BASIC STAND-ALONE Server. You can now customise it to suit your own requirements.
 echo You will need to arrange an OPENBRIDGE connection if you wish to be part of a network. Please wait a few
 echo minutes for the dashboard to start. It will download user data files before it kicks into action.
 echo
-echo -e "\x1b[33m             If you use the XLX PEER or MMDVM PEER, remember to set them in the '\x1b[37mrules.py\x1b[33m' file\x1b[37m"
+echo -e "\x1b[33m             If you use the XLX PEER or MMDVM PEER, remember to set them in the 'rules.py' file\x1b[37m"
 echo
-echo -e "\x1b[37m                                      Dashboard at \x1b[36mhttp://${intip}/"
+echo -e "\x1b[34m                                      Dashboard at http://${intip}/"
 echo
-echo -e "\x1b[37m                               Network Server Name:     \x1b[33m$name\x1b[37m"
+echo -e "\x1b[33m                               Network Server Name:     $name"
 echo
-echo -e "To access it from the internet, set the following \x1b[36mPORT FORWARDING\x1b[37m in your Firewall/Router configuration."
+echo -e "To access it from the internet, set the following \x1b[34mPORT FORWARDING\x1b[33m in your Firewall/Router configuration."
 echo
 echo
 echo -e "\x1b[33m                    PORTS TO FORWARD                         Server Connection Details"
@@ -3005,46 +2945,25 @@ echo "                    ----------------                         -------------
 echo "                    INBOUND   TCP   80                       Internal   IP address : ${intip}"
 echo "                    INBOUND   TCP   9000                     WAN/Public IP address : ${extip}"
 echo "                    INBOUND   UDP   $uport                                     Port : $uport"
-echo "                    INBOUND   UDP   $opb                           Password : $pword"
+echo "                    INBOUND   UDP   62035-62045                           Password : $pword"
 echo 
 echo
 echo -e "\x1b[37mIf you are running your server on an internal network and want use the external IP address for"
 echo -e "\x1b[37mthis server, you will need to setup a DNS name for accessing from the internet. You can do this"
 echo -e "\x1b[37mby creating an \x1b[33mA RECORD\x1b[37m in your DNS Domain Records pointing to:   \x1b[33m${extip}\x1b[37m"
 echo
-echo -e "                    Don't forget the \x1b[36mPORT FORWARDING\x1b[37m for external access"
+echo We will now leave you to configure your server to suit your individual requirements.
 echo
 exit 0
 }
 
-function timer () {
-#CountDown
-echo
-echo
-echo "Please wait while we start the Server and other thing running"
-secs=$((1 * 75))
-while [ $secs -gt 0 ]; do
-   echo -ne "          $secs\033[0K\r"
-   sleep 1
-   : $((secs--))
-done
-
-splash
-echo
-echo
-echo "You can now check the Dashboard. It should have started now"
-echo
-echo We will now leave you to configure your server to suit your individual requirements.
-echo
-echo
-}
-
-##  Main Script
+###################
+##               ##
+##  Main Script  ##
+##               ##
+###################
 
 # Pre-Install Setup
-
-splash
-echo
 
 pre-install
 
