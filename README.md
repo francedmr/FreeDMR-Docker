@@ -62,7 +62,11 @@ I recommend SUDO mode.
 
 Method 2
 
-	cd /opt
+        sudo su
+	sudo apt update && sudo apt upgrade
+        apt-get install python3-venv
+	apt install git
+        cd /opt
 	git clone https://github.com/francedmr/FreeDMR-Docker.git
 	cd /opt/freedmr-installer
 	bash install.sh
