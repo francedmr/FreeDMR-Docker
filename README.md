@@ -68,7 +68,7 @@ Method 2
 	apt install git
         cd /opt
 	git clone https://github.com/francedmr/FreeDMR-Docker.git
-	cd /opt/freedmr-installer
+	cd /opt/FreeDMR-Docker
 	bash install.sh
 	
 
