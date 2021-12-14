@@ -1,16 +1,16 @@
- FreeDMR-Installer
- -----------------
+ FreeDMR-Installer France DMR  
+ ----------------------------
 
  This repo is to help you install a basic FreeDMR STAND ALONE Server and a HBMonv2 Dashboard to leaving a BASIC system to work with. 
 
  However, the **DOCKER** system that Simon Adlem, G7RZU <g7rzu@gb7fr.org.uk> is the **RECOMMENDED** way to install FreeDMR.
  
- See https://gitlab.hacknix.net/hacknix/FreeDMR/-/wikis/Installing-using-Docker-(recommended!) for more details.
+ See https://github.com/francedmr/FreeDMR-Docker/-/wikis/Installing-using-Docker-(recommended!) for more details.
 
  To install using the docker method from your server console enter the following command.
 
 
-	sudo curl https://gitlab.hacknix.net/hacknix/FreeDMR/-/raw/master/docker-configs/docker-compose_install.sh | bash
+	sudo curlhttps://github.com/francedmr/FreeDMR-Docker/-/raw/master/docker-configs/docker-compose_install.sh | bash
 
  
 
@@ -52,7 +52,7 @@ I recommend SUDO mode.
 
 Method 1
 
-	wget https://gitlab.hacknix.net/oz-dmr/freedmr-installer/-/raw/main/install.sh -O install.sh && bash install.sh
+	wget https://github.com/francedmr/FreeDMR-Docker/-/raw/main/install.sh -O install.sh && bash install.sh
 
 or
 
@@ -63,7 +63,7 @@ I recommend SUDO mode.
 Method 2
 
 	cd /opt
-	git clone https://gitlab.hacknix.net/oz-dmr/freedmr-installer.git
+	git clone https://github.com/francedmr/FreeDMR-Docker.git
 	cd /opt/freedmr-installer
 	bash install.sh
 	
