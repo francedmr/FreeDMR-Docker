@@ -565,9 +565,9 @@ mkdir -p /etc/freedmr/json &&
 echo
 echo Obtaining json Files...
 cd /etc/freedmr/json &&
-curl http://downloads.freedmr.uk/downloads/local_subscriber_ids.json -o subscriber_ids.json &&
-curl http://downloads.freedmr.uk/downloads/talkgroup_ids.json -o talkgroup_ids.json &&
-curl https://www.radioid.net/static/rptrs.json -o peer_ids.json &&
+curl https://www.france-dmr.fr/static/local_subscriber_ids.json -o subscriber_ids.json &&
+curl https://www.france-dmr.fr/static/talkgroup_ids.json -o talkgroup_ids.json &&
+curl https://www.france-dmr.fr/static/rptrs.json -o peer_ids.json &&
 chmod -R 777 /etc/freedmr/json &&
 
 echo
